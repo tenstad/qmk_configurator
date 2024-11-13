@@ -2,6 +2,8 @@ import escape from 'lodash/escape';
 import isUndefined from 'lodash/isUndefined';
 import { longFormKeycodes } from '@/longFormKeycodes';
 
+import keymap_extras from '../../i18n/keymap_extras';
+
 /* hasBitsSet
  *
  * arguments:
@@ -189,17 +191,22 @@ function parseKeycode(keycodesStore, keycode, stats) {
     }
 
     //Check whether it is a layer switching code, mod-tap, or combo keycode
-    if (internal.includes('KC')) {
+    if (
+      internal.includes('KC') ||
+      Object.values(keymap_extras).some(({ prefix }) =>
+        internal.includes(prefix)
+      )
+    ) {
       // Layer Tap keycode
       if (maincode === 'LT') {
         return newLayerContainerKey(keycodesStore, maincode, internal);
       }
       internal = longFormKeycodes[internal] || internal;
-      metadata = keycodesStore.lookupKeycode(internal);
-      if (metadata === undefined) {
-        stats.any += 1;
-        return newAnyKey(keycodesStore, keycode);
-      }
+      metadata = keycodesStore.lookupKeycode(internal) ?? {
+        code: internal,
+        name: internal.replace('_', '_ '),
+        type: 'raw'
+      };
       let internalkeycode = newKey(metadata, internal);
 
       outerKeycode = maincode + '(kc)';
@@ -235,11 +242,11 @@ function parseKeycode(keycodesStore, keycode, stats) {
   }
 
   // regular keycode
-  metadata = keycodesStore.lookupKeycode(keycode);
-  if (metadata === undefined) {
-    stats.any += 1;
-    return newAnyKey(keycodesStore, keycode);
-  }
+  metadata = keycodesStore.lookupKeycode(keycode) ?? {
+    code: keycode,
+    name: keycode.replace('_', '_ '),
+    type: 'raw'
+  };
   return newKey(metadata, keycode);
 }
 
